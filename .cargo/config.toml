@@ -1,2 +1,11 @@
-[target.x86_64-unknown-linux-gnu]
-rustflags = ["-C", "target-cpu=native"]
+[target.aarch64-unknown-linux-gnu]
+rustflags = [
+    "-C", "target-cpu=native",
+    "-C", "link-arg=-s",            # 减少二进制文件大小
+    "-C", "relocation-model=pic"     # 生成位置无关代码
+]
+
+[profile.release]
+lto = true         # 启用链接时间优化
+codegen-units = 1  # 减少编译单元
+panic = "abort"    # 优化 panic 行为
