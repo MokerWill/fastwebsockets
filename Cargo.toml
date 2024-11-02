@@ -38,22 +38,22 @@ path = "examples/echo_server_split.rs"
 required-features = ["upgrade"]
 
 [dependencies]
-tokio = { version = "1.40.0", default-features = false, features = ["io-util"] }
+tokio = { version = "1.41.0", default-features = false, features = ["io-util"] }
 simdutf8 = { version = "0.1.5", optional = true }
-hyper-util = { version = "0.1.9", features = ["tokio"], optional = true }
+hyper-util = { version = "0.1.10", features = ["tokio"], optional = true }
 http-body-util = { version = "0.1.2", optional = true }
-hyper = { version = "1", features = [
+hyper = { version = "1.5.0", features = [
     "http1",
     "server",
     "client",
 ], optional = true }
-pin-project = { version = "1.1.6", optional = true }
+pin-project = { version = "1.1.7", optional = true }
 base64 = { version = "0.22.1", optional = true }
 sha1 = { version = "0.10.6", optional = true }
 utf-8 = "0.7.6"
 rand = "0.8.5"
-thiserror = "1.0.64"
-bytes = "1.7.2"
+thiserror = "1.0.66"
+bytes = "1.8.0"
 
 # Axum integration
 axum-core = { version = "0.4.5", optional = true }
@@ -76,20 +76,20 @@ unstable-split = []
 with_axum = ["axum-core", "http", "async-trait"]
 
 [dev-dependencies]
-tokio = { version = "1.40.0", features = ["full", "macros"] }
+tokio = { version = "1.41.0", features = ["full", "macros"] }
 tokio-rustls = "0.26.0"
 rustls-pemfile = "2.2.0"
-hyper-util = { version = "0.1.9", features = ["tokio"] }
+hyper-util = { version = "0.1.10", features = ["tokio"] }
 http-body-util = { version = "0.1.2" }
-hyper = { version = "1.5.0", features = ["http1", "server", "client"] }
+hyper = { version = "1", features = ["http1", "server", "client"] }
 assert2 = "0.3.15"
 trybuild = "1.0.101"
 criterion = "0.5.1"
-anyhow = "1.0.90"
+anyhow = "1.0.92"
 webpki-roots = "0.26.6"
-bytes = "1.7.2"
+bytes = "1.8.0"
 axum = "0.7.7"
-serde_json = "1.0.131"
+serde_json = "1.0.132"
 rustls-pki-types = "1.10.0"
 
 [[test]]
