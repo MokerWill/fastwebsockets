@@ -108,7 +108,7 @@ impl Payload<'_> {
         }
       }
       Payload::BorrowedMut(borrowed) => borrowed,
-      Payload::Owned(ref mut owned) => owned,
+      Payload::Owned(owned) => owned,
       Payload::Bytes(b) => b.as_mut(),
     }
   }
