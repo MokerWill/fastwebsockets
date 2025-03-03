@@ -52,18 +52,20 @@ base64 = { version = "0.22.1", optional = true }
 sha1 = { version = "0.10.6", optional = true }
 utf-8 = "0.7.5"
 rand = "0.9.0"
-thiserror = "2.0.11"
+thiserror = "2.0.12"
 bytes = "1.10.0"
 
 # Axum integration
 axum-core = { version = "0.5.0", optional = true }
 http = { version = "1.2.0", optional = true }
-async-trait = { version = "0.1.86", optional = true }
+async-trait = { version = "0.1.87", optional = true }
 rustls-pki-types = "1.11.0"
 
 [features]
-default = ["simd"]
+default = ["simd", "simple"]
 simd = ["simdutf8/aarch64_neon"]
+simple = []
+client = []
 upgrade = [
     "hyper",
     "pin-project",
@@ -78,7 +80,7 @@ with_axum = ["axum-core", "http", "async-trait"]
 
 [dev-dependencies]
 tokio = { version = "1.25.0", features = ["full", "macros"] }
-tokio-rustls = "0.26.1"
+tokio-rustls = "0.26.2"
 rustls-pemfile = "2.2.0"
 hyper-util = { version = "0.1.0", features = ["tokio"] }
 http-body-util = { version = "0.1.0" }
@@ -86,7 +88,7 @@ hyper = { version = "1", features = ["http1", "server", "client"] }
 assert2 = "0.3.4"
 trybuild = "1.0.103"
 criterion = "0.5.1"
-anyhow = "1.0.95"
+anyhow = "1.0.97"
 webpki-roots = "0.26.8"
 bytes = "1.4.0"
 axum = "0.8.1"

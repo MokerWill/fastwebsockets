@@ -606,39 +606,13 @@ impl ReadHalf {
       Err(e) => return (Err(e), None),
     };
 
+    #[cfg(not(feature = "client"))]
     if self.role == Role::Server && self.auto_apply_mask {
       frame.unmask()
     };
 
     match frame.opcode {
       OpCode::Close if self.auto_close => {
-        match frame.payload.len() {
-          0 => {}
-          1 => return (Err(WebSocketError::InvalidCloseFrame), None),
-          _ => {
-            let code = close::CloseCode::from(u16::from_be_bytes(
-              frame.payload[0..2].try_into().unwrap(),
-            ));
-
-            #[cfg(feature = "simd")]
-            if simdutf8::basic::from_utf8(&frame.payload[2..]).is_err() {
-              return (Err(WebSocketError::InvalidUTF8), None);
-            };
-
-            #[cfg(not(feature = "simd"))]
-            if std::str::from_utf8(&frame.payload[2..]).is_err() {
-              return (Err(WebSocketError::InvalidUTF8), None);
-            };
-
-            if !code.is_allowed() {
-              return (
-                Err(WebSocketError::InvalidCloseCode),
-                Some(Frame::close(1002, &frame.payload[2..])),
-              );
-            }
-          }
-        };
-
         let obligated_send = Frame::close_raw(frame.payload.to_owned().into());
         (Ok(Some(frame)), Some(obligated_send))
       }
@@ -646,11 +620,7 @@ impl ReadHalf {
         (Ok(None), Some(Frame::pong(frame.payload)))
       }
       OpCode::Text => {
-        if frame.fin && !frame.is_utf8() {
-          (Err(WebSocketError::InvalidUTF8), None)
-        } else {
-          (Ok(Some(frame)), None)
-        }
+        (Ok(Some(frame)), None)
       }
       _ => (Ok(Some(frame)), None),
     }
@@ -677,45 +647,33 @@ impl ReadHalf {
     }
 
     let fin = self.buffer[0] & 0b10000000 != 0;
-    let rsv1 = self.buffer[0] & 0b01000000 != 0;
-    let rsv2 = self.buffer[0] & 0b00100000 != 0;
-    let rsv3 = self.buffer[0] & 0b00010000 != 0;
 
-    if rsv1 || rsv2 || rsv3 {
-      return Err(WebSocketError::ReservedBitsNotZero);
+    #[cfg(not(feature = "simple"))]
+    {
+      let rsv1 = self.buffer[0] & 0b01000000 != 0;
+      let rsv2 = self.buffer[0] & 0b00100000 != 0;
+      let rsv3 = self.buffer[0] & 0b00010000 != 0;
+
+      if rsv1 || rsv2 || rsv3 {
+        return Err(WebSocketError::ReservedBitsNotZero);
+      }
     }
 
     let opcode = frame::OpCode::try_from(self.buffer[0] & 0b00001111)?;
     let masked = self.buffer[1] & 0b10000000 != 0;
 
     let length_code = self.buffer[1] & 0x7F;
-    let extra = match length_code {
-      126 => 2,
-      127 => 8,
-      _ => 0,
-    };
+    let extra = if length_code < 126 { 0 } else { 2 };
 
     self.buffer.advance(2);
     while self.buffer.remaining() < extra + masked as usize * 4 {
       eof!(stream.read_buf(&mut self.buffer).await?);
     }
 
-    let payload_len: usize = match extra {
-      0 => usize::from(length_code),
-      2 => self.buffer.get_u16() as usize,
-      #[cfg(any(target_pointer_width = "64", target_pointer_width = "128"))]
-      8 => self.buffer.get_u64() as usize,
-      // On 32bit systems, usize is only 4bytes wide so we must check for usize overflowing
-      #[cfg(any(
-        target_pointer_width = "8",
-        target_pointer_width = "16",
-        target_pointer_width = "32"
-      ))]
-      8 => match usize::try_from(self.buffer.get_u64()) {
-        Ok(length) => length,
-        Err(_) => return Err(WebSocketError::FrameTooLarge),
-      },
-      _ => unreachable!(),
+    let payload_len: usize = if extra == 0 {
+      length_code as usize
+    } else {
+      self.buffer.get_u16() as usize
     };
 
     let mask = if masked {
@@ -724,16 +682,19 @@ impl ReadHalf {
       None
     };
 
-    if frame::is_control(opcode) && !fin {
-      return Err(WebSocketError::ControlFrameFragmented);
-    }
+    #[cfg(not(feature = "simple"))]
+    {
+      if frame::is_control(opcode) && !fin {
+        return Err(WebSocketError::ControlFrameFragmented);
+      }
 
-    if opcode == OpCode::Ping && payload_len > 125 {
-      return Err(WebSocketError::PingFrameTooLarge);
-    }
+      if opcode == OpCode::Ping && payload_len > 125 {
+        return Err(WebSocketError::PingFrameTooLarge);
+      }
 
-    if payload_len >= self.max_message_size {
-      return Err(WebSocketError::FrameTooLarge);
+      if payload_len >= self.max_message_size {
+        return Err(WebSocketError::FrameTooLarge);
+      }
     }
 
     // Reserve a bit more to try to get next frame header and avoid a syscall to read it next time
@@ -744,8 +705,7 @@ impl ReadHalf {
 
     // if we read too much it will stay in the buffer, for the next call to this method
     let payload = self.buffer.split_to(payload_len);
-    let frame = Frame::new(fin, opcode, mask, Payload::Bytes(payload));
-    Ok(frame)
+    Ok(Frame::new(fin, opcode, mask, Payload::Bytes(payload)))
   }
 }
 
