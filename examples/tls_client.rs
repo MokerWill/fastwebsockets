@@ -83,7 +83,7 @@ async fn main() -> Result<()> {
         let payload =
             String::from_utf8(msg.payload.to_vec()).expect("Invalid UTF-8 data");
         // Normally deserialise from json here, print just to show it works
-        println!("{:?}", payload);
+        println!("{}", payload);
       }
       OpCode::Close => {
         break;
