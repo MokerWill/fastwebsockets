@@ -349,6 +349,7 @@ repr_u8! {
     }
 }
 
+#[cfg(not(feature = "simple"))]
 #[inline]
 pub fn is_control(opcode: OpCode) -> bool {
   matches!(opcode, OpCode::Close | OpCode::Ping | OpCode::Pong)
